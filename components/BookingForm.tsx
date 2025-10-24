@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, User, Mail, Phone, MapPin, CreditCard } from 'lucide-react';
+import { Calendar, User, Mail, Phone, MapPin, CreditCard, Loader2 } from 'lucide-react';
 
 interface BookingFormProps {
   resortId: number;
   resortName: string;
   resortPrice: number;
   onClose: () => void;
-  onSubmit: (bookingData: BookingFormData) => void;
+  onSubmit: (bookingData: BookingFormData) => Promise<void>;
 }
 
 export interface BookingFormData {
@@ -22,9 +22,7 @@ export interface BookingFormData {
   customerAddress: string;
   checkInDate: string;
   checkOutDate: string;
-  numberOfGuests: number;
   specialRequests: string;
-  paymentMethod: string;
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({
@@ -42,12 +40,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
     customerAddress: '',
     checkInDate: '',
     checkOutDate: '',
-    numberOfGuests: 1,
-    specialRequests: '',
-    paymentMethod: 'credit_card'
+    specialRequests: ''
   });
 
   const [errors, setErrors] = useState<Partial<BookingFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>('');
 
   const validateForm = (): boolean => {
     const newErrors: Partial<BookingFormData> = {};
@@ -78,10 +76,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      setIsSubmitting(true);
+      setSubmitError('');
+      try {
+        await onSubmit(formData);
+      } catch (error) {
+        setSubmitError('Failed to process booking. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -89,6 +95,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+    if (submitError) {
+      setSubmitError('');
     }
   };
 
@@ -219,43 +228,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     <p className="text-sm text-red-500">{errors.checkOutDate}</p>
                   )}
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="numberOfGuests">Number of Guests</Label>
-                  <Select
-                    value={formData.numberOfGuests.toString()}
-                    onValueChange={(value) => handleInputChange('numberOfGuests', parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select number of guests" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                        <SelectItem key={num} value={num.toString()}>
-                          {num} {num === 1 ? 'Guest' : 'Guests'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
-                  <Select
-                    value={formData.paymentMethod}
-                    onValueChange={(value) => handleInputChange('paymentMethod', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credit_card">Credit Card</SelectItem>
-                      <SelectItem value="debit_card">Debit Card</SelectItem>
-                      <SelectItem value="paypal">PayPal</SelectItem>
-                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               
               <div className="space-y-2">
@@ -298,13 +270,37 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             </div>
 
+            {/* Error Message */}
+            {submitError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">{submitError}</p>
+              </div>
+            )}
+
             {/* Submit Buttons */}
             <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose} 
+                className="flex-1"
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit" className="flex-1">
-                Confirm Booking
+              <Button 
+                type="submit" 
+                className="flex-1" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Confirm Booking'
+                )}
               </Button>
             </div>
           </form>

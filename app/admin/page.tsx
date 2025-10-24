@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, Users, Calendar, DollarSign, MapPin, Settings, Loader2 } from 'lucide-react';
+import BookingForm from '@/components/BookingForm';
 import { 
   getServices, 
   getReservations, 
@@ -14,6 +15,12 @@ import {
   getDashboardStats,
   createService,
   createCustomer,
+  updateService,
+  updateCustomer,
+  updateReservation,
+  deleteService,
+  deleteCustomer,
+  deleteReservation,
   type Service,
   type Reservation,
   type Customer
@@ -23,10 +30,25 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAddService, setShowAddService] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [showEditService, setShowEditService] = useState(false);
+  const [showEditCustomer, setShowEditCustomer] = useState(false);
+  const [showEditReservation, setShowEditReservation] = useState(false);
   const [newService, setNewService] = useState({ s_name: '', s_type: '', location: '', price: '' });
   const [addingService, setAddingService] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ c_name: '', c_email: '', c_phone: '', c_address: '' });
   const [addingCustomer, setAddingCustomer] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
+  const [updatingService, setUpdatingService] = useState(false);
+  const [updatingCustomer, setUpdatingCustomer] = useState(false);
+  const [updatingReservation, setUpdatingReservation] = useState(false);
+  const [deletingService, setDeletingService] = useState<number | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<number | null>(null);
+  const [deletingReservation, setDeletingReservation] = useState<number | null>(null);
+  const [showDeleteServiceConfirm, setShowDeleteServiceConfirm] = useState<Service | null>(null);
+  const [showDeleteCustomerConfirm, setShowDeleteCustomerConfirm] = useState<Customer | null>(null);
+  const [showDeleteReservationConfirm, setShowDeleteReservationConfirm] = useState<Reservation | null>(null);
   
   // Data state
   const [services, setServices] = useState<Service[]>([]);
@@ -123,11 +145,156 @@ export default function AdminPage() {
     }
   };
 
+  const handleEditService = (service: Service) => {
+    setEditingService(service);
+    setShowEditService(true);
+  };
+
+  const handleUpdateService = async () => {
+    if (!editingService) return;
+    
+    try {
+      setUpdatingService(true);
+      const updated = await updateService(editingService.s_id, {
+        s_name: editingService.s_name,
+        s_type: editingService.s_type,
+        location: editingService.location,
+        price: editingService.price,
+      });
+      
+      setServices((prev) => prev.map(s => s.s_id === updated.s_id ? updated : s));
+      setShowEditService(false);
+      setEditingService(null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to update service');
+    } finally {
+      setUpdatingService(false);
+    }
+  };
+
+  const handleDeleteService = (service: Service) => {
+    setShowDeleteServiceConfirm(service);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!showDeleteServiceConfirm) return;
+    
+    try {
+      setDeletingService(showDeleteServiceConfirm.s_id);
+      await deleteService(showDeleteServiceConfirm.s_id);
+      setServices((prev) => prev.filter(s => s.s_id !== showDeleteServiceConfirm.s_id));
+      setShowDeleteServiceConfirm(null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to delete service');
+    } finally {
+      setDeletingService(null);
+    }
+  };
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setShowEditCustomer(true);
+  };
+
+  const handleUpdateCustomer = async () => {
+    if (!editingCustomer) return;
+    
+    try {
+      setUpdatingCustomer(true);
+      const updated = await updateCustomer(editingCustomer.c_id, {
+        c_name: editingCustomer.c_name,
+        c_email: editingCustomer.c_email,
+        c_phone: editingCustomer.c_phone,
+        c_address: editingCustomer.c_address,
+      });
+      
+      setCustomers((prev) => prev.map(c => c.c_id === updated.c_id ? updated : c));
+      setShowEditCustomer(false);
+      setEditingCustomer(null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to update customer');
+    } finally {
+      setUpdatingCustomer(false);
+    }
+  };
+
+  const handleDeleteCustomer = (customer: Customer) => {
+    setShowDeleteCustomerConfirm(customer);
+  };
+
+  const confirmDeleteCustomer = async () => {
+    if (!showDeleteCustomerConfirm) return;
+    
+    try {
+      setDeletingCustomer(showDeleteCustomerConfirm.c_id);
+      await deleteCustomer(showDeleteCustomerConfirm.c_id);
+      setCustomers((prev) => prev.filter(c => c.c_id !== showDeleteCustomerConfirm.c_id));
+      setShowDeleteCustomerConfirm(null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to delete customer');
+    } finally {
+      setDeletingCustomer(null);
+    }
+  };
+
+  const handleEditReservation = (reservation: Reservation) => {
+    setEditingReservation(reservation);
+    setShowEditReservation(true);
+  };
+
+  const handleUpdateReservation = async () => {
+    if (!editingReservation) return;
+    
+    try {
+      setUpdatingReservation(true);
+      const updated = await updateReservation(editingReservation.reservation_id, {
+        payment_status: editingReservation.payment_status,
+        check_in_date: editingReservation.check_in_date,
+        check_out_date: editingReservation.check_out_date,
+        price: editingReservation.price,
+      });
+      
+      setReservations((prev) => prev.map(r => r.reservation_id === updated.reservation_id ? updated : r));
+      setShowEditReservation(false);
+      setEditingReservation(null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to update reservation');
+    } finally {
+      setUpdatingReservation(false);
+    }
+  };
+
+  const handleDeleteReservation = (reservation: Reservation) => {
+    setShowDeleteReservationConfirm(reservation);
+  };
+
+  const confirmDeleteReservation = async () => {
+    if (!showDeleteReservationConfirm) return;
+    
+    try {
+      setDeletingReservation(showDeleteReservationConfirm.reservation_id);
+      await deleteReservation(showDeleteReservationConfirm.reservation_id);
+      setReservations((prev) => prev.filter(r => r.reservation_id !== showDeleteReservationConfirm.reservation_id));
+      setShowDeleteReservationConfirm(null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Failed to delete reservation');
+    } finally {
+      setDeletingReservation(null);
+    }
+  };
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Settings },
     { id: 'services', label: 'Services', icon: MapPin },
     { id: 'reservations', label: 'Reservations', icon: Calendar },
     { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'booking', label: 'New Booking', icon: Plus },
     { id: 'payments', label: 'Payments', icon: DollarSign }
   ];
 
@@ -316,12 +483,27 @@ export default function AdminPage() {
                     <p>Check-out: {new Date(service.check_out).toLocaleDateString()}</p>
                   </div>
                   <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleEditService(service)}
+                    >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Trash2 className="h-4 w-4 mr-1" />
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleDeleteService(service)}
+                      disabled={deletingService === service.s_id}
+                    >
+                      {deletingService === service.s_id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1" />
+                      )}
                       Delete
                     </Button>
                   </div>
@@ -404,7 +586,7 @@ export default function AdminPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(reservation.date).toLocaleDateString()}
+                          {new Date(reservation.check_in_date).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           ৳{reservation.price}
@@ -419,12 +601,26 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <Button size="sm" variant="outline" className="mr-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mr-2"
+                            onClick={() => handleEditReservation(reservation)}
+                          >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4 mr-1" />
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleDeleteReservation(reservation)}
+                             disabled={deletingReservation === reservation.reservation_id}
+                          >
+                            {deletingReservation === reservation.reservation_id ? (
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 mr-1" />
+                            )}
                             Delete
                           </Button>
                         </td>
@@ -498,15 +694,30 @@ export default function AdminPage() {
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleEditCustomer(customer)}
+                    >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
-                       <Trash2 className="h-4 w-4 mr-1" />
-                       Delete
-                     </Button>
-                   </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleDeleteCustomer(customer)}
+                       disabled={deletingCustomer === customer.c_id}
+                    >
+                      {deletingCustomer === customer.c_id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-1" />
+                      )}
+                      Delete
+                    </Button>
+                  </div>
                  </CardContent>
                </Card>
              ))}
@@ -532,6 +743,44 @@ export default function AdminPage() {
     </div>
   );
 
+  const renderBooking = () => {
+    const handleBookingSubmit = async (bookingData: any) => {
+      try {
+        // Here you would typically call your booking API
+        console.log('Booking submitted:', bookingData);
+        alert('Booking created successfully!');
+        // Refresh reservations data
+        await fetchAllData();
+      } catch (error) {
+        console.error('Error creating booking:', error);
+        alert('Failed to create booking. Please try again.');
+      }
+    };
+
+    const handleBookingClose = () => {
+      // In admin panel context, we don't need to close anything
+      // This could be used to reset form or navigate away
+    };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>New Booking</CardTitle>
+          <CardDescription>Create a new reservation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BookingForm 
+            resortId={0}
+            resortName="Admin Booking"
+            resortPrice={0}
+            onClose={handleBookingClose}
+            onSubmit={handleBookingSubmit}
+          />
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -542,6 +791,8 @@ export default function AdminPage() {
         return renderReservations();
       case 'customers':
         return renderCustomers();
+      case 'booking':
+        return renderBooking();
       case 'payments':
         return renderPayments();
       default:
@@ -675,6 +926,360 @@ export default function AdminPage() {
                 </Button>
                 <Button className="flex-1" onClick={handleAddCustomer} disabled={addingCustomer}>
                   {addingCustomer ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>) : 'Add Customer'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {showEditService && editingService && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Edit Service</CardTitle>
+              <CardDescription>Update service information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editServiceName">Service Name</Label>
+                <Input 
+                  id="editServiceName" 
+                  placeholder="Enter service name" 
+                  value={editingService.s_name} 
+                  onChange={(e) => setEditingService(s => s ? ({ ...s, s_name: e.target.value }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editServiceType">Service Type</Label>
+                <Select 
+                  value={editingService.s_type} 
+                  onValueChange={(v) => setEditingService(s => s ? ({ ...s, s_type: v }) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select service type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resort">Resort</SelectItem>
+                    <SelectItem value="hotel">Hotel</SelectItem>
+                    <SelectItem value="villa">Villa</SelectItem>
+                    <SelectItem value="cabin">Cabin</SelectItem>
+                    <SelectItem value="conference">Conference Hall</SelectItem>
+                    <SelectItem value="vehicle">Vehicle</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editLocation">Location</Label>
+                <Input 
+                  id="editLocation" 
+                  placeholder="Enter location" 
+                  value={editingService.location} 
+                  onChange={(e) => setEditingService(s => s ? ({ ...s, location: e.target.value }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPrice">Price</Label>
+                <Input 
+                  id="editPrice" 
+                  type="number" 
+                  placeholder="Enter price" 
+                  value={editingService.price} 
+                  onChange={(e) => setEditingService(s => s ? ({ ...s, price: parseFloat(e.target.value) || 0 }) : null)}
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEditService(false);
+                    setEditingService(null);
+                  }} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1" 
+                  onClick={handleUpdateService} 
+                  disabled={updatingService}
+                >
+                  {updatingService ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
+                  ) : (
+                    'Update Service'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Customer Modal */}
+      {showEditCustomer && editingCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Edit Customer</CardTitle>
+              <CardDescription>Update customer information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editCustomerName">Customer Name</Label>
+                <Input 
+                  id="editCustomerName" 
+                  placeholder="Enter customer name" 
+                  value={editingCustomer.c_name} 
+                  onChange={(e) => setEditingCustomer(c => c ? ({ ...c, c_name: e.target.value }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editCustomerEmail">Email</Label>
+                <Input 
+                  id="editCustomerEmail" 
+                  type="email" 
+                  placeholder="Enter email" 
+                  value={editingCustomer.c_email} 
+                  onChange={(e) => setEditingCustomer(c => c ? ({ ...c, c_email: e.target.value }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editCustomerPhone">Phone</Label>
+                <Input 
+                  id="editCustomerPhone" 
+                  placeholder="Enter phone number" 
+                  value={editingCustomer.c_phone || ''} 
+                  onChange={(e) => setEditingCustomer(c => c ? ({ ...c, c_phone: e.target.value }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editCustomerAddress">Address</Label>
+                <Input 
+                  id="editCustomerAddress" 
+                  placeholder="Enter address" 
+                  value={editingCustomer.c_address || ''} 
+                  onChange={(e) => setEditingCustomer(c => c ? ({ ...c, c_address: e.target.value }) : null)}
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEditCustomer(false);
+                    setEditingCustomer(null);
+                  }} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1" 
+                  onClick={handleUpdateCustomer} 
+                  disabled={updatingCustomer}
+                >
+                  {updatingCustomer ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
+                  ) : (
+                    'Update Customer'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Reservation Modal */}
+      {showEditReservation && editingReservation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Edit Reservation</CardTitle>
+              <CardDescription>Update reservation information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editReservationDate">Date</Label>
+                <Input 
+                  id="editReservationDate" 
+                  type="date" 
+                  value={editingReservation.check_in_date} 
+                  onChange={(e) => setEditingReservation(r => r ? ({ ...r, check_in_date: e.target.value }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editReservationPrice">Price</Label>
+                <Input 
+                  id="editReservationPrice" 
+                  type="number" 
+                  placeholder="Enter price" 
+                  value={editingReservation.price} 
+                  onChange={(e) => setEditingReservation(r => r ? ({ ...r, price: parseFloat(e.target.value) || 0 }) : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPaymentStatus">Payment Status</Label>
+                <Select 
+                  value={editingReservation.payment_status} 
+                  onValueChange={(v) => setEditingReservation(r => r ? ({ ...r, payment_status: v }) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEditReservation(false);
+                    setEditingReservation(null);
+                  }} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1" 
+                  onClick={handleUpdateReservation} 
+                  disabled={updatingReservation}
+                >
+                  {updatingReservation ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>
+                  ) : (
+                    'Update Reservation'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Service Confirmation Modal */}
+      {showDeleteServiceConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">Delete Service</CardTitle>
+              <CardDescription>Are you sure you want to delete this service?</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold">{showDeleteServiceConfirm.s_name}</h4>
+                <p className="text-sm text-gray-600">{showDeleteServiceConfirm.s_type} - {showDeleteServiceConfirm.location}</p>
+                <p className="text-sm font-medium">${showDeleteServiceConfirm.price}</p>
+              </div>
+              <p className="text-sm text-red-600">This action cannot be undone.</p>
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDeleteServiceConfirm(null)} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="flex-1" 
+                  onClick={confirmDeleteService} 
+                  disabled={deletingService === showDeleteServiceConfirm.s_id}
+                >
+                  {deletingService === showDeleteServiceConfirm.s_id ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    'Delete Service'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Customer Confirmation Modal */}
+      {showDeleteCustomerConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">Delete Customer</CardTitle>
+              <CardDescription>Are you sure you want to delete this customer?</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold">{showDeleteCustomerConfirm.c_name}</h4>
+                <p className="text-sm text-gray-600">{showDeleteCustomerConfirm.c_email}</p>
+                <p className="text-sm text-gray-600">{showDeleteCustomerConfirm.c_phone}</p>
+              </div>
+              <p className="text-sm text-red-600">This action cannot be undone.</p>
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDeleteCustomerConfirm(null)} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="flex-1" 
+                  onClick={confirmDeleteCustomer} 
+                  disabled={deletingCustomer === showDeleteCustomerConfirm.c_id}
+                >
+                  {deletingCustomer === showDeleteCustomerConfirm.c_id ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    'Delete Customer'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Reservation Confirmation Modal */}
+      {showDeleteReservationConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">Delete Reservation</CardTitle>
+              <CardDescription>Are you sure you want to delete this reservation?</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold">Reservation #{showDeleteReservationConfirm.reservation_id}</h4>
+                <p className="text-sm text-gray-600">Date: {new Date(showDeleteReservationConfirm.check_in_date).toLocaleDateString()}</p>
+                <p className="text-sm font-medium">Price: ${showDeleteReservationConfirm.price}</p>
+                <p className="text-sm text-gray-600">Status: {showDeleteReservationConfirm.payment_status}</p>
+              </div>
+              <p className="text-sm text-red-600">This action cannot be undone.</p>
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowDeleteReservationConfirm(null)} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="flex-1" 
+                  onClick={confirmDeleteReservation} 
+                  disabled={deletingReservation === showDeleteReservationConfirm.reservation_id}
+                >
+                  {deletingReservation === showDeleteReservationConfirm.reservation_id ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    'Delete Reservation'
+                  )}
                 </Button>
               </div>
             </CardContent>

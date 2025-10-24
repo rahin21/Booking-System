@@ -114,17 +114,28 @@ ALTER TABLE Payment ENABLE ROW LEVEL SECURITY;
 -- Create policies for public access to services (for browsing)
 CREATE POLICY "Services are viewable by everyone" ON Service FOR SELECT USING (true);
 
--- Create policies for authenticated users
-CREATE POLICY "Customers can view their own data" ON Customer FOR SELECT USING (auth.uid()::text = c_email);
-CREATE POLICY "Customers can insert their own data" ON Customer FOR INSERT WITH CHECK (auth.uid()::text = c_email);
+-- Create policies for anonymous and authenticated users
+-- Allow anonymous users to create customer records for booking
+CREATE POLICY "Anyone can create customer data" ON Customer FOR INSERT WITH CHECK (true);
+CREATE POLICY "Customers can view their own data" ON Customer FOR SELECT USING (
+  auth.uid() IS NULL OR auth.uid()::text = c_email
+);
 CREATE POLICY "Customers can update their own data" ON Customer FOR UPDATE USING (auth.uid()::text = c_email);
 
+-- Allow anonymous users to create reservations for booking
+CREATE POLICY "Anyone can create reservations" ON Reservation FOR INSERT WITH CHECK (true);
 CREATE POLICY "Users can view their own reservations" ON Reservation FOR SELECT USING (
-  EXISTS (SELECT 1 FROM Customer WHERE Customer.c_id = Reservation.c_id AND Customer.c_email = auth.uid()::text)
+  auth.uid() IS NULL OR EXISTS (SELECT 1 FROM Customer WHERE Customer.c_id = Reservation.c_id AND Customer.c_email = auth.uid()::text)
 );
 
-CREATE POLICY "Users can create reservations" ON Reservation FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM Customer WHERE Customer.c_id = Reservation.c_id AND Customer.c_email = auth.uid()::text)
+-- Allow anonymous users to create payment records
+CREATE POLICY "Anyone can create payments" ON Payment FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can view payments for their reservations" ON Payment FOR SELECT USING (
+  auth.uid() IS NULL OR EXISTS (
+    SELECT 1 FROM Reservation r 
+    JOIN Customer c ON r.c_id = c.c_id 
+    WHERE r.reservation_id = Payment.reservation_id AND c.c_email = auth.uid()::text
+  )
 );
 
 -- Admin policies (you'll need to set up admin role management)

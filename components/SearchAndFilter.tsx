@@ -14,6 +14,10 @@ interface SearchAndFilterProps {
   onLocationChange: (location: string) => void;
   onPriceRangeChange: (range: string) => void;
   onReset: () => void;
+  // Dynamic filter options
+  serviceTypes?: string[];
+  locations?: string[];
+  priceRanges?: string[];
 }
 
 const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
@@ -25,36 +29,12 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
   onTypeChange,
   onLocationChange,
   onPriceRangeChange,
-  onReset
+  onReset,
+  serviceTypes = ['All Types'],
+  locations = ['All Locations'],
+  priceRanges = ['All Prices']
 }) => {
-  const serviceTypes = [
-    'All Types',
-    'Resort',
-    'Hotel',
-    'Villa',
-    'Cabin',
-    'Conference Hall',
-    'Vehicle'
-  ];
-
-  const locations = [
-    'All Locations',
-    'Mountain View',
-    'Beach Front',
-    'City Center',
-    'Forest Retreat',
-    'Lakeside',
-    'Desert Oasis'
-  ];
-
-  const priceRanges = [
-    'All Prices',
-    'Under $100',
-    '$100 - $200',
-    '$200 - $300',
-    '$300 - $500',
-    'Over $500'
-  ];
+  // Use dynamic filter options from props instead of hardcoded arrays
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md space-y-4">

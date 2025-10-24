@@ -1,6 +1,7 @@
 import React from 'react';
 import { HomeClient } from '@/components/HomeClient';
 import { createClient } from '@/utils/supabase/server';
+import { getFilterOptions } from '@/lib/database';
 
 // Transform Supabase Service data to match ResortCard interface
 function transformServiceToResort(service: any) {
@@ -32,5 +33,8 @@ export default async function Home() {
   // Transform services to match the expected resort format
   const resorts = services.map(transformServiceToResort);
 
-  return <HomeClient initialResorts={resorts} />;
+  // Fetch dynamic filter options
+  const filterOptions = await getFilterOptions();
+
+  return <HomeClient initialResorts={resorts} filterOptions={filterOptions} />;
 }

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { SearchAndFilter } from '@/components/SearchAndFilter';
 import ResortCard from '@/components/ResortCard';
 import BookingForm, { BookingFormData } from '@/components/BookingForm';
+import { createCustomer, createReservation } from '@/lib/database';
 import { 
   Calendar, 
   Star, 
@@ -34,6 +35,11 @@ interface Resort {
 
 interface HomeClientProps {
   initialResorts: Resort[];
+  filterOptions?: {
+    serviceTypes: string[];
+    locations: string[];
+    priceRanges: string[];
+  };
 }
 
 const getLocationIcon = (location: string) => {
@@ -55,7 +61,7 @@ const getLocationIcon = (location: string) => {
   }
 };
 
-export function HomeClient({ initialResorts }: HomeClientProps) {
+export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All Types');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
@@ -74,20 +80,23 @@ export function HomeClient({ initialResorts }: HomeClientProps) {
     let matchesPrice = true;
     if (priceRange !== 'All Prices') {
       switch (priceRange) {
-        case 'Under ৳100':
-          matchesPrice = resort.price < 100;
+        case 'Under ৳1000':
+          matchesPrice = resort.price < 1000;
           break;
-        case '৳100 - ৳200':
-          matchesPrice = resort.price >= 100 && resort.price <= 200;
+        case '৳1000 - ৳5000':
+          matchesPrice = resort.price >= 1000 && resort.price <= 5000;
           break;
-        case '৳200 - ৳300':
-          matchesPrice = resort.price >= 200 && resort.price <= 300;
+        case '৳5000 - ৳10000':
+          matchesPrice = resort.price >= 5000 && resort.price <= 10000;
           break;
-        case '৳300 - ৳500':
-          matchesPrice = resort.price >= 300 && resort.price <= 500;
+        case '৳10000 - ৳15000':
+          matchesPrice = resort.price >= 10000 && resort.price <= 15000;
           break;
-        case 'Over ৳500':
-          matchesPrice = resort.price > 500;
+        case '৳15000 - ৳20000':
+          matchesPrice = resort.price >= 15000 && resort.price <= 20000;
+          break;
+        case 'Over ৳20000':
+          matchesPrice = resort.price > 20000;
           break;
       }
     }
@@ -103,12 +112,99 @@ export function HomeClient({ initialResorts }: HomeClientProps) {
     }
   };
 
-  const handleBookingSubmit = (bookingData: BookingFormData) => {
-    // Here you would typically send the booking data to your backend
-    console.log('Booking submitted:', bookingData);
-    alert('Booking submitted successfully! We will contact you soon.');
-    setShowBookingForm(false);
-    setSelectedResort(null);
+  const handleBookingSubmit = async (bookingData: BookingFormData): Promise<void> => {
+    console.log('🚀 Starting booking process with data:', bookingData);
+    
+    try {
+      // Validate booking data
+      if (!bookingData.customerName || !bookingData.customerEmail) {
+        throw new Error('Customer name and email are required');
+      }
+      
+      if (!bookingData.checkInDate || !bookingData.checkOutDate) {
+        throw new Error('Check-in and check-out dates are required');
+      }
+      
+      if (!selectedResort) {
+        throw new Error('No resort selected for booking');
+      }
+      
+      console.log('✅ Booking data validation passed');
+      
+      // First, create or get the customer
+      const customerData = {
+        c_name: bookingData.customerName,
+        c_email: bookingData.customerEmail,
+        c_phone: bookingData.customerPhone,
+        c_address: bookingData.customerAddress || ''
+      };
+      
+      console.log('👤 Creating customer with data:', customerData);
+      const customer = await createCustomer(customerData);
+      
+      if (!customer) {
+        console.error('❌ Failed to create customer - no customer returned');
+        throw new Error('Failed to create customer account. Please check your information and try again.');
+      }
+      
+      console.log('✅ Customer created/found successfully:', customer);
+      
+      // Calculate total price
+      const checkIn = new Date(bookingData.checkInDate);
+      const checkOut = new Date(bookingData.checkOutDate);
+      const days = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      const totalPrice = selectedResort.price * days;
+      
+      console.log(`💰 Calculated price: ${selectedResort.price} × ${days} days = ${totalPrice}`);
+      
+      // Create the reservation
+      const reservationData = {
+          c_id: customer.c_id,
+          s_id: selectedResort.id,
+          check_in_date: bookingData.checkInDate,
+          check_out_date: bookingData.checkOutDate,
+          price: totalPrice,
+          payment_status: 'pending',
+          service_type: selectedResort.type
+        };
+      
+      console.log('🏨 Creating reservation with data:', reservationData);
+      const reservation = await createReservation(reservationData);
+      
+      if (!reservation) {
+        console.error('❌ Failed to create reservation - no reservation returned');
+        throw new Error('Failed to create reservation. Please try again.');
+      }
+      
+      console.log('✅ Reservation created successfully:', reservation);
+      
+      // Success - show success message and close form
+      alert(`🎉 Booking confirmed! Your reservation ID is ${reservation.reservation_id}. We will contact you soon at ${bookingData.customerEmail}.`);
+      setShowBookingForm(false);
+      setSelectedResort(null);
+      
+    } catch (error) {
+      console.error('❌ Booking error occurred:', error);
+      
+      // Enhanced error handling with specific error types
+      let errorMessage = 'Sorry, there was an error processing your booking. Please try again.';
+      
+      if (error instanceof Error) {
+        // Check for specific database errors
+        if (error.message.includes('permission denied')) {
+          errorMessage = 'Database access error. Please contact support if this persists.';
+        } else if (error.message.includes('duplicate key')) {
+          errorMessage = 'A booking with this information already exists.';
+        } else if (error.message.includes('foreign key')) {
+          errorMessage = 'Invalid booking data. Please refresh the page and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      console.error('🔍 Final error message:', errorMessage);
+      throw new Error(errorMessage);
+    }
   };
 
   const handleCloseBookingForm = () => {
@@ -159,6 +255,9 @@ export function HomeClient({ initialResorts }: HomeClientProps) {
           onLocationChange={setSelectedLocation}
           onPriceRangeChange={setPriceRange}
           onReset={resetFilters}
+          serviceTypes={filterOptions?.serviceTypes}
+          locations={filterOptions?.locations}
+          priceRanges={filterOptions?.priceRanges}
         />
       </div>
 
