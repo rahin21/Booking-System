@@ -4,6 +4,7 @@ import "./globals.css";
 import { Button } from "@/components/ui/button";
 import { Home, Settings, Calendar, Users } from "lucide-react";
 import Link from "next/link";
+import AuthButton from "@/components/AuthButton";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -57,10 +58,7 @@ export default function RootLayout({
                   <Calendar className="h-4 w-4 mr-2" />
                   My Bookings
                 </Button>
-                <Button size="sm">
-                  <Users className="h-4 w-4 mr-2" />
-                  Sign In
-                </Button>
+                <AuthButton />
               </div>
             </div>
           </div>
