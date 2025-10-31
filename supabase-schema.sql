@@ -23,6 +23,8 @@ CREATE TABLE Service (
     price DECIMAL(10, 2) NOT NULL,
     description TEXT,
     amenities TEXT[], -- Array of amenities
+    images TEXT[], -- Array of Cloudinary image URLs
+    thumbnail_url TEXT, -- Optional thumbnail
     rating DECIMAL(2,1) DEFAULT 4.5,
     admin_id INT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

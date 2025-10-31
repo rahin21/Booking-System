@@ -12,6 +12,8 @@ export interface Service {
   price: number;
   description?: string;
   amenities?: string[];
+  images?: string[];
+  thumbnail_url?: string;
   rating?: number;
   admin_id?: number;
   created_at?: string;

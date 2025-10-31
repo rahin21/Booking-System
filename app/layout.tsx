@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "sonner";
 import { Home, Settings, Calendar, Users } from "lucide-react";
 import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
@@ -19,6 +21,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Resort Booking System",
   description: "Online reservation and booking system for resorts, hotels, and services",
+  icons: {
+    icon: "/BS2.png",
+  },
 };
 
 export default function RootLayout({
@@ -35,10 +40,8 @@ export default function RootLayout({
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-8">
                 <Link href="/" className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">R</span>
-                  </div>
-                  <span className="text-xl font-bold text-gray-900">ResortBook</span>
+                  <Image src="/BS2.png" alt="ResortBook Logo" width={32} height={32} />
+                  <span className="text-xl font-bold text-gray-900">Booking System</span>
                 </Link>
                 
                 <div className="hidden md:flex items-center space-x-6">
@@ -67,6 +70,9 @@ export default function RootLayout({
         <main>
           {children}
         </main>
+
+        {/* Global Toaster for notifications */}
+        <Toaster richColors position="top-right" />
 
         {/* Footer */}
         <footer className="bg-gray-900 text-white py-12">

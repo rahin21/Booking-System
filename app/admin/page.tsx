@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, Users, Calendar, DollarSign, MapPin, Settings, Loader2 } from 'lucide-react';
 import BookingForm from '@/components/BookingForm';
+import { toast } from 'sonner';
 import { 
   getServices, 
   getReservations, 
@@ -33,7 +34,7 @@ export default function AdminPage() {
   const [showEditService, setShowEditService] = useState(false);
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [showEditReservation, setShowEditReservation] = useState(false);
-  const [newService, setNewService] = useState({ s_name: '', s_type: '', location: '', price: '' });
+  const [newService, setNewService] = useState({ s_name: '', s_type: '', location: '', price: '', images: [] as string[] });
   const [addingService, setAddingService] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ c_name: '', c_email: '', c_phone: '', c_address: '' });
   const [addingCustomer, setAddingCustomer] = useState(false);
@@ -45,6 +46,7 @@ export default function AdminPage() {
   const [updatingReservation, setUpdatingReservation] = useState(false);
   const [deletingService, setDeletingService] = useState<number | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<number | null>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [deletingReservation, setDeletingReservation] = useState<number | null>(null);
   const [showDeleteServiceConfirm, setShowDeleteServiceConfirm] = useState<Service | null>(null);
   const [showDeleteCustomerConfirm, setShowDeleteCustomerConfirm] = useState<Customer | null>(null);
@@ -97,7 +99,7 @@ export default function AdminPage() {
     try {
       setAddingService(true);
       if (!newService.s_name || !newService.s_type || !newService.location || !newService.price) {
-        alert('Please fill in all required fields');
+        toast.warning('Please fill in all required fields');
         return;
       }
       const payload = {
@@ -106,14 +108,16 @@ export default function AdminPage() {
         location: newService.location,
         price: Number(newService.price),
         status: 'available',
+        images: newService.images,
       } as Omit<Service, 's_id' | 'created_at' | 'updated_at'>;
       const created = await createService(payload);
       setServices((prev) => [created, ...prev]);
       setShowAddService(false);
-      setNewService({ s_name: '', s_type: '', location: '', price: '' });
+      setNewService({ s_name: '', s_type: '', location: '', price: '', images: [] });
+      toast.success('Service added successfully');
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to add service');
+      toast.error(e?.message || 'Failed to add service');
     } finally {
       setAddingService(false);
     }
@@ -160,14 +164,16 @@ export default function AdminPage() {
         s_type: editingService.s_type,
         location: editingService.location,
         price: editingService.price,
+        images: editingService.images,
       });
       
       setServices((prev) => prev.map(s => s.s_id === updated.s_id ? updated : s));
       setShowEditService(false);
       setEditingService(null);
+      toast.success('Service updated successfully');
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to update service');
+      toast.error(e?.message || 'Failed to update service');
     } finally {
       setUpdatingService(false);
     }
@@ -185,11 +191,133 @@ export default function AdminPage() {
       await deleteService(showDeleteServiceConfirm.s_id);
       setServices((prev) => prev.filter(s => s.s_id !== showDeleteServiceConfirm.s_id));
       setShowDeleteServiceConfirm(null);
+      toast.success('Service deleted');
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to delete service');
+      toast.error(e?.message || 'Failed to delete service');
     } finally {
       setDeletingService(null);
+    }
+  };
+
+  const handleUploadImages = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    try {
+      setUploadingImages(true);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || 'Image upload failed');
+        }
+        const data = await res.json();
+        if (data?.url) {
+          uploadedUrls.push(data.url);
+        }
+      }
+      if (uploadedUrls.length) {
+        setNewService((s) => ({ ...s, images: [...(s.images || []), ...uploadedUrls] }));
+        toast.success(`Uploaded ${uploadedUrls.length} image(s)`);
+      }
+    } catch (e: any) {
+      console.error('Upload error:', e);
+      toast.error(e?.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImageAtIndex = async (index: number) => {
+    const url = newService.images?.[index];
+    try {
+      if (url) {
+        const res = await fetch('/api/delete-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || 'Failed to delete image from Cloudinary');
+        }
+      }
+      setNewService((s) => ({
+        ...s,
+        images: (s.images || []).filter((_, i) => i !== index),
+      }));
+      toast.success('Image removed');
+    } catch (e: any) {
+      console.error('Delete image error:', e);
+      toast.error(e?.message || 'Failed to remove image');
+    }
+  };
+
+  // Edit modal image handlers
+  const handleUploadImagesEdit = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    try {
+      setUploadingImages(true);
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || 'Image upload failed');
+        }
+        const data = await res.json();
+        if (data?.url) {
+          uploadedUrls.push(data.url);
+        }
+      }
+      if (uploadedUrls.length) {
+        setEditingService((s) => s ? ({ ...s, images: [ ...(s.images || []), ...uploadedUrls ] }) : s);
+        toast.success(`Uploaded ${uploadedUrls.length} image(s)`);
+      }
+    } catch (e: any) {
+      console.error('Upload error:', e);
+      toast.error(e?.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeEditImageAtIndex = async (index: number) => {
+    const url = editingService?.images?.[index];
+    try {
+      if (url) {
+        const res = await fetch('/api/delete-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || 'Failed to delete image from Cloudinary');
+        }
+      }
+      setEditingService((s) => s ? ({
+        ...s,
+        images: (s.images || []).filter((_, i) => i !== index),
+      }) : s);
+      toast.success('Image removed');
+    } catch (e: any) {
+      console.error('Delete image error:', e);
+      toast.error(e?.message || 'Failed to remove image');
     }
   };
 
@@ -459,6 +587,12 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service) => (
               <Card key={service.s_id}>
+                {service.images && service.images.length > 0 && (
+                  <div className="w-full h-40 overflow-hidden rounded-t">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={service.images[0]} alt={service.s_name} className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <CardHeader>
                   <CardTitle className="text-lg">{service.s_name}</CardTitle>
                   <CardDescription className="capitalize">{service.s_type}</CardDescription>
@@ -882,6 +1016,24 @@ export default function AdminPage() {
                 <Label htmlFor="price">Price</Label>
                 <Input id="price" type="number" placeholder="Enter price" value={newService.price} onChange={(e) => setNewService((s) => ({ ...s, price: e.target.value }))} />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="images">Images</Label>
+                <Input id="images" type="file" accept="image/*" multiple onChange={(e) => handleUploadImages(e.target.files)} />
+                {uploadingImages && (
+                  <div className="text-sm text-gray-600 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</div>
+                )}
+                {newService.images && newService.images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {newService.images.map((url, idx) => (
+                      <div key={idx} className="relative group border rounded overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Image ${idx + 1}`} className="w-full h-20 object-cover" />
+                        <button type="button" className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100" onClick={() => removeImageAtIndex(idx)}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex space-x-3 pt-4">
                 <Button variant="outline" onClick={() => setShowAddService(false)} className="flex-1">
                   Cancel
@@ -988,6 +1140,36 @@ export default function AdminPage() {
                   value={editingService.price} 
                   onChange={(e) => setEditingService(s => s ? ({ ...s, price: parseFloat(e.target.value) || 0 }) : null)}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editImages">Images</Label>
+                <Input 
+                  id="editImages" 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={(e) => handleUploadImagesEdit(e.target.files)}
+                />
+                {uploadingImages && (
+                  <div className="text-sm text-gray-600 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</div>
+                )}
+                {editingService.images && editingService.images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {editingService.images.map((url, idx) => (
+                      <div key={idx} className="relative group border rounded overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Image ${idx + 1}`} className="w-full h-20 object-cover" />
+                        <button 
+                          type="button" 
+                          className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100" 
+                          onClick={() => removeEditImageAtIndex(idx)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex space-x-3 pt-4">
                 <Button 

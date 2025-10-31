@@ -31,6 +31,7 @@ interface Resort {
   checkOut: string;
   amenities: string[];
   rating: number;
+  images?: string[];
 }
 
 interface HomeClientProps {

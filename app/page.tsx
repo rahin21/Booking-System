@@ -16,7 +16,8 @@ function transformServiceToResort(service: any) {
     checkOut: service.check_out,
     amenities: service.amenities || [],
     rating: service.rating || 4.5,
-    description: service.description || ''
+    description: service.description || '',
+    images: service.images || []
   };
 }
 

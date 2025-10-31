@@ -14,6 +14,7 @@ interface ResortCardProps {
   checkOut: string;
   amenities?: string[];
   rating?: number;
+  images?: string[];
   onBookNow: (id: number) => void;
 }
 
@@ -28,6 +29,7 @@ const ResortCard: React.FC<ResortCardProps> = ({
   checkOut,
   amenities = [],
   rating = 4.5,
+  images = [],
   onBookNow
 }) => {
   const isAvailable = status === 'available';
@@ -47,6 +49,16 @@ const ResortCard: React.FC<ResortCardProps> = ({
 
   return (
     <Card className="w-full max-w-sm hover:shadow-lg transition-shadow duration-300">
+      {images.length > 0 && (
+        <div className="w-full h-40 bg-gray-100 overflow-hidden">
+          <img
+            src={images[0]}
+            alt={`${name} image`}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
@@ -94,7 +106,7 @@ const ResortCard: React.FC<ResortCardProps> = ({
       <CardFooter className="pt-3 border-t">
         <div className="w-full space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-green-600">${price}</span>
+            <span className="text-2xl font-bold text-green-600"><b className='text-xl'>৳</b>{price}</span>
             <span className={`px-2 py-1 text-xs rounded-full ${
               isAvailable 
                 ? 'bg-green-100 text-green-800' 
