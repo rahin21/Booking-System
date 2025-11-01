@@ -57,9 +57,11 @@ export default function RootLayout({
               </div>
               
               <div className="flex items-center space-x-4">
-                <Button variant="outline" size="sm">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  My Bookings
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/bookings">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    My Bookings
+                  </Link>
                 </Button>
                 <AuthButton />
               </div>

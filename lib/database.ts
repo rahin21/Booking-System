@@ -218,9 +218,18 @@ export async function createReservation(reservationData: Omit<Reservation, 'rese
       throw new Error('Check-in and check-out dates are required');
     }
     
+    // Ensure booking date is set to satisfy NOT NULL constraint
+    const today = new Date();
+    const bookingDate = today.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const payload = {
+      date: bookingDate,
+      ...reservationData,
+    };
+
     const { data, error } = await supabase
       .from('reservation')
-      .insert(reservationData)
+      .insert(payload)
       .select()
       .single();
 
@@ -253,6 +262,59 @@ export async function getAdmins() {
   }
 
   return data as Admin[];
+}
+
+export async function getCurrentAdmin() {
+  const supabase = createClient();
+  
+  try {
+    // Get current authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('No authenticated user:', authError);
+      return null;
+    }
+
+    // Find admin by email
+    const { data, error } = await supabase
+      .from('admin')
+      .select('*')
+      .eq('a_email', user.email)
+      .maybeSingle();
+
+    if (error && (error as any).code !== 'PGRST116') {
+      console.error('Error fetching current admin:', error);
+      return null;
+    }
+
+    return (data as Admin) ?? null;
+  } catch (error) {
+    console.error('Error in getCurrentAdmin:', error);
+    return null;
+  }
+}
+
+export async function createAdmin(adminData: Omit<Admin, 'a_id' | 'created_at' | 'updated_at'>) {
+  const supabase = createClient();
+  
+  try {
+    const { data, error } = await supabase
+      .from('admin')
+      .insert(adminData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating admin:', error);
+      throw error;
+    }
+
+    return data as Admin;
+  } catch (error) {
+    console.error('Error creating admin:', error);
+    throw error;
+  }
 }
 
 // Dashboard stats

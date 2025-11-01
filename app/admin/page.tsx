@@ -22,9 +22,11 @@ import {
   deleteService,
   deleteCustomer,
   deleteReservation,
+  getCurrentAdmin,
   type Service,
   type Reservation,
-  type Customer
+  type Customer,
+  type Admin
 } from '@/lib/database';
 
 export default function AdminPage() {
@@ -56,6 +58,7 @@ export default function AdminPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
   const [dashboardStats, setDashboardStats] = useState({
     totalServices: 0,
     totalReservations: 0,
@@ -76,17 +79,19 @@ export default function AdminPage() {
       setLoading(true);
       setError(null);
       
-      const [servicesData, reservationsData, customersData, statsData] = await Promise.all([
+      const [servicesData, reservationsData, customersData, statsData, adminData] = await Promise.all([
         getServices(),
         getReservations(),
         getCustomers(),
-        getDashboardStats()
+        getDashboardStats(),
+        getCurrentAdmin()
       ]);
       
       setServices(servicesData);
       setReservations(reservationsData);
       setCustomers(customersData);
       setDashboardStats(statsData);
+      setCurrentAdmin(adminData);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load data. Please try again.');
@@ -102,6 +107,12 @@ export default function AdminPage() {
         toast.warning('Please fill in all required fields');
         return;
       }
+      
+      if (!currentAdmin) {
+        toast.error('Admin authentication required to create services');
+        return;
+      }
+      
       const payload = {
         s_name: newService.s_name,
         s_type: newService.s_type,
@@ -109,6 +120,7 @@ export default function AdminPage() {
         price: Number(newService.price),
         status: 'available',
         images: newService.images,
+        admin_id: currentAdmin.a_id,
       } as Omit<Service, 's_id' | 'created_at' | 'updated_at'>;
       const created = await createService(payload);
       setServices((prev) => [created, ...prev]);
@@ -150,6 +162,16 @@ export default function AdminPage() {
   };
 
   const handleEditService = (service: Service) => {
+    if (!currentAdmin) {
+      toast.error('Admin authentication required');
+      return;
+    }
+    
+    if (service.admin_id !== currentAdmin.a_id) {
+      toast.error('You can only edit services you created');
+      return;
+    }
+    
     setEditingService(service);
     setShowEditService(true);
   };
@@ -180,6 +202,16 @@ export default function AdminPage() {
   };
 
   const handleDeleteService = (service: Service) => {
+    if (!currentAdmin) {
+      toast.error('Admin authentication required');
+      return;
+    }
+    
+    if (service.admin_id !== currentAdmin.a_id) {
+      toast.error('You can only delete services you created');
+      return;
+    }
+    
     setShowDeleteServiceConfirm(service);
   };
 

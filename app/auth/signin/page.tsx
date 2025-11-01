@@ -53,6 +53,13 @@ export default function SignInPage() {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setMessage('Sign-up successful. Check your email for a confirmation link.');
+        // Switch to signin mode after successful signup
+        setTimeout(() => {
+          setMode('signin');
+          setMessage('Please sign in with your new account.');
+          setEmail('');
+          setPassword('');
+        }, 2000);
       }
     } catch (err: any) {
       setError(err?.message || 'An unexpected error occurred');
@@ -133,7 +140,7 @@ export default function SignInPage() {
             <div className="mt-2 text-sm text-center">
               {mode === 'signin' ? (
                 <button type="button" className="text-blue-600 hover:underline" onClick={() => setMode('signup')}>
-                  Dont have an account? Sign up
+                  Don't have an account? Sign up
                 </button>
               ) : (
                 <button type="button" className="text-blue-600 hover:underline" onClick={() => setMode('signin')}>

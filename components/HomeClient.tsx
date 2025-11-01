@@ -69,6 +69,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
   const [priceRange, setPriceRange] = useState('All Prices');
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedResort, setSelectedResort] = useState<Resort | null>(null);
+  const [showLearnMoreModal, setShowLearnMoreModal] = useState(false);
 
   // Filter resorts based on search and filters
   const filteredResorts = initialResorts.filter(resort => {
@@ -80,25 +81,25 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
     
     let matchesPrice = true;
     if (priceRange !== 'All Prices') {
-      switch (priceRange) {
-        case 'Under ৳1000':
-          matchesPrice = resort.price < 1000;
-          break;
-        case '৳1000 - ৳5000':
-          matchesPrice = resort.price >= 1000 && resort.price <= 5000;
-          break;
-        case '৳5000 - ৳10000':
-          matchesPrice = resort.price >= 5000 && resort.price <= 10000;
-          break;
-        case '৳10000 - ৳15000':
-          matchesPrice = resort.price >= 10000 && resort.price <= 15000;
-          break;
-        case '৳15000 - ৳20000':
-          matchesPrice = resort.price >= 15000 && resort.price <= 20000;
-          break;
-        case 'Over ৳20000':
-          matchesPrice = resort.price > 20000;
-          break;
+      const normalized = priceRange.replace(/[,৳]/g, '').trim();
+
+      if (/^Under/i.test(priceRange)) {
+        const maxMatch = normalized.match(/(\d+)/);
+        const max = maxMatch ? parseInt(maxMatch[1], 10) : Number.MAX_SAFE_INTEGER;
+        matchesPrice = resort.price < max;
+      } else if (/^Over/i.test(priceRange)) {
+        const minMatch = normalized.match(/(\d+)/);
+        const min = minMatch ? parseInt(minMatch[1], 10) : 0;
+        matchesPrice = resort.price > min;
+      } else {
+        const nums = normalized.match(/\d+/g);
+        if (nums && nums.length >= 2) {
+          const min = parseInt(nums[0], 10);
+          const max = parseInt(nums[1], 10);
+          matchesPrice = resort.price >= min && resort.price <= max;
+        } else {
+          matchesPrice = true; // Fallback if parsing fails
+        }
       }
     }
 
@@ -220,6 +221,21 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
     setPriceRange('All Prices');
   };
 
+  const handleExploreNow = () => {
+    const searchSection = document.getElementById('search-section');
+    if (searchSection) {
+      searchSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleLearnMore = () => {
+    setShowLearnMoreModal(true);
+  };
+
+  const handleCloseLearnMoreModal = () => {
+    setShowLearnMoreModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -233,10 +249,10 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
               Discover amazing resorts, hotels, and unique accommodations worldwide
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" onClick={handleExploreNow}>
                 Explore Now
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-blue-600 hover:bg-blue-600 hover:bg-opacity-20">
+              <Button size="lg" variant="outline" className="border-white text-blue-600 hover:bg-blue-600 hover:bg-opacity-20" onClick={handleLearnMore}>
                 Learn More
               </Button>
             </div>
@@ -245,7 +261,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
       </div>
 
       {/* Search and Filter Section */}
-      <div className="container mx-auto px-4 py-8">
+      <div id="search-section" className="container mx-auto px-4 py-8">
         <SearchAndFilter
           searchQuery={searchQuery}
           selectedType={selectedType}
@@ -348,6 +364,130 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Learn More Modal */}
+      {showLearnMoreModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-bold text-gray-800">About Our Platform</h2>
+                <Button variant="outline" size="sm" onClick={handleCloseLearnMoreModal}>
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-semibold mb-3 text-blue-600">Welcome to Your Ultimate Booking Experience</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    Our platform connects travelers with exceptional accommodations worldwide. Whether you're seeking a luxury resort, 
+                    a cozy mountain retreat, or a beachfront paradise, we make finding and booking your perfect stay effortless.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-3">
+                      <Calendar className="h-6 w-6 text-blue-600 mr-2" />
+                      <h4 className="font-semibold text-gray-800">Easy Booking Process</h4>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      Our streamlined booking system allows you to reserve your accommodation in just a few clicks. 
+                      Instant confirmation and secure payment processing ensure peace of mind.
+                    </p>
+                  </div>
+
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-3">
+                      <Star className="h-6 w-6 text-green-600 mr-2" />
+                      <h4 className="font-semibold text-gray-800">Quality Guaranteed</h4>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      Every property on our platform is carefully vetted and regularly inspected to ensure 
+                      the highest standards of quality, cleanliness, and service.
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-3">
+                      <Users className="h-6 w-6 text-purple-600 mr-2" />
+                      <h4 className="font-semibold text-gray-800">24/7 Customer Support</h4>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      Our dedicated support team is available around the clock to assist with bookings, 
+                      answer questions, and resolve any issues during your stay.
+                    </p>
+                  </div>
+
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-3">
+                      <MapPin className="h-6 w-6 text-orange-600 mr-2" />
+                      <h4 className="font-semibold text-gray-800">Global Destinations</h4>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      From bustling city centers to remote natural retreats, our extensive network 
+                      covers destinations across the globe to suit every travel preference.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
+                  <h4 className="text-xl font-semibold mb-3">Why Choose Us?</h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-white rounded-full mr-2"></span>
+                          Best Price Guarantee
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-white rounded-full mr-2"></span>
+                          Free Cancellation Options
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-white rounded-full mr-2"></span>
+                          Verified Guest Reviews
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-white rounded-full mr-2"></span>
+                          Secure Payment Processing
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-white rounded-full mr-2"></span>
+                          Mobile-Friendly Platform
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-white rounded-full mr-2"></span>
+                          Loyalty Rewards Program
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">
+                    Ready to start your journey? Explore our accommodations and book your perfect stay today!
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button onClick={() => { handleCloseLearnMoreModal(); handleExploreNow(); }} className="bg-blue-600 hover:bg-blue-700">
+                      Start Exploring
+                    </Button>
+                    <Button variant="outline" onClick={handleCloseLearnMoreModal}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Booking Form Modal */}
       {showBookingForm && selectedResort && (
