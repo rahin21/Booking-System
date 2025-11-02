@@ -49,10 +49,6 @@ export default function RootLayout({
                     <Home className="h-4 w-4" />
                     <span>Home</span>
                   </Link>
-                  <Link href="/admin" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                    <Settings className="h-4 w-4" />
-                    <span>Admin</span>
-                  </Link>
                 </div>
               </div>
               
@@ -79,7 +75,7 @@ export default function RootLayout({
         {/* Footer */}
         <footer className="bg-gray-900 text-white py-12">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h3 className="text-lg font-semibold mb-4">ResortBook</h3>
                 <p className="text-gray-400">
@@ -91,7 +87,6 @@ export default function RootLayout({
                 <h4 className="text-md font-semibold mb-4">Quick Links</h4>
                 <ul className="space-y-2 text-gray-400">
                   <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
-                  <li><Link href="/admin" className="hover:text-white transition-colors">Admin</Link></li>
                   <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
                   <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
                 </ul>

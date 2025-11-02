@@ -19,9 +19,16 @@ export default function SignInPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [redirectUrl, setRedirectUrl] = useState('');
+  const [ownerMode, setOwnerMode] = useState(false);
 
   useEffect(() => {
     setRedirectUrl(`${window.location.origin}/auth/callback`);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      setOwnerMode(params.get('owner') === '1');
+      const msg = params.get('message');
+      if (msg) setMessage(msg);
+    } catch {}
   }, []);
 
   const handleOAuth = async () => {
@@ -48,7 +55,26 @@ export default function SignInPage() {
       if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push('/');
+        if (ownerMode) {
+          // Verify admin role before redirecting to /admin
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email) {
+            const { data: adminRecord, error: adminErr } = await supabase
+              .from('admin')
+              .select('a_email')
+              .eq('a_email', user.email)
+              .maybeSingle();
+            if (adminErr || !adminRecord) {
+              setError('Access restricted to business owners. Your account is not registered as an owner.');
+              return;
+            }
+            router.push('/admin');
+          } else {
+            router.push('/');
+          }
+        } else {
+          router.push('/');
+        }
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
@@ -74,11 +100,13 @@ export default function SignInPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {mode === 'signin' ? <LogIn className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
-            {mode === 'signin' ? 'Sign in' : 'Create an account'}
+            {mode === 'signin' ? (ownerMode ? 'Business Owner Sign in' : 'Sign in') : 'Create an account'}
           </CardTitle>
           <CardDescription>
             {mode === 'signin'
-              ? 'Use your email and password to sign in, or continue with Google.'
+              ? ownerMode
+                ? 'Sign in as a business owner. Only owner accounts can access the admin dashboard.'
+                : 'Use your email and password to sign in, or continue with Google.'
               : 'Create an account with your email and password.'}
           </CardDescription>
         </CardHeader>

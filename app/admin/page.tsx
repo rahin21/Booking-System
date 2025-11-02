@@ -7,27 +7,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, Users, Calendar, DollarSign, MapPin, Settings, Loader2 } from 'lucide-react';
-import BookingForm from '@/components/BookingForm';
+import BookingForm, { BookingFormData } from '@/components/BookingForm';
 import { toast } from 'sonner';
-import { 
-  getServices, 
-  getReservations, 
-  getCustomers, 
-  getDashboardStats,
-  createService,
-  createCustomer,
-  updateService,
-  updateCustomer,
-  updateReservation,
-  deleteService,
-  deleteCustomer,
-  deleteReservation,
-  getCurrentAdmin,
-  type Service,
-  type Reservation,
-  type Customer,
-  type Admin
-} from '@/lib/database';
+  import { 
+    getServices, 
+    getServicesByAdmin,
+    getReservations, 
+    getCustomers, 
+    getDashboardStats,
+    createService,
+    createCustomer,
+    createReservation,
+    createPayment,
+    updateService,
+    updateCustomer,
+    updateReservation,
+    deleteService,
+    deleteCustomer,
+    deleteReservation,
+    getCurrentAdmin,
+    type Service,
+    type Reservation,
+    type Customer,
+    type Admin
+  } from '@/lib/database';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -53,6 +56,7 @@ export default function AdminPage() {
   const [showDeleteServiceConfirm, setShowDeleteServiceConfirm] = useState<Service | null>(null);
   const [showDeleteCustomerConfirm, setShowDeleteCustomerConfirm] = useState<Customer | null>(null);
   const [showDeleteReservationConfirm, setShowDeleteReservationConfirm] = useState<Reservation | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<number>(0);
   
   // Data state
   const [services, setServices] = useState<Service[]>([]);
@@ -74,24 +78,50 @@ export default function AdminPage() {
     fetchAllData();
   }, []);
 
+  // Ensure selected service is valid after services load/update
+  useEffect(() => {
+    if (services.length > 0) {
+      setSelectedServiceId(prev => {
+        const exists = services.some(s => s.s_id === prev);
+        return prev && exists ? prev : services[0].s_id;
+      });
+    } else {
+      setSelectedServiceId(0);
+    }
+  }, [services]);
+
   const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const [servicesData, reservationsData, customersData, statsData, adminData] = await Promise.all([
-        getServices(),
-        getReservations(),
-        getCustomers(),
-        getDashboardStats(),
-        getCurrentAdmin()
-      ]);
-      
-      setServices(servicesData);
-      setReservations(reservationsData);
-      setCustomers(customersData);
-      setDashboardStats(statsData);
+      // Fetch current admin first, then filter services by ownership
+      const adminData = await getCurrentAdmin();
       setCurrentAdmin(adminData);
+
+      if (adminData) {
+        const [servicesData, reservationsData, customersData, statsData] = await Promise.all([
+          getServicesByAdmin(adminData.a_id),
+          getReservations(),
+          getCustomers(),
+          getDashboardStats(),
+        ]);
+
+        setServices(servicesData);
+        setReservations(reservationsData);
+        setCustomers(customersData);
+        setDashboardStats(statsData);
+      } else {
+        // No admin session: hide services list and load other data minimally
+        setServices([]);
+        const [reservationsData, customersData, statsData] = await Promise.all([
+          getReservations(),
+          getCustomers(),
+          getDashboardStats(),
+        ]);
+        setReservations(reservationsData);
+        setCustomers(customersData);
+        setDashboardStats(statsData);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load data. Please try again.');
@@ -139,8 +169,8 @@ export default function AdminPage() {
     try {
       setAddingCustomer(true);
       if (!newCustomer.c_name || !newCustomer.c_email) {
-        alert('Name and email are required');
-        return;
+      toast.warning('Name and email are required');
+      return;
       }
       const created = await createCustomer({
         c_name: newCustomer.c_name,
@@ -155,7 +185,7 @@ export default function AdminPage() {
       }
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to add customer');
+      toast.error(e.message || 'Failed to add customer');
     } finally {
       setAddingCustomer(false);
     }
@@ -375,7 +405,7 @@ export default function AdminPage() {
       setEditingCustomer(null);
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to update customer');
+      toast.error(e.message || 'Failed to update customer');
     } finally {
       setUpdatingCustomer(false);
     }
@@ -395,7 +425,7 @@ export default function AdminPage() {
       setShowDeleteCustomerConfirm(null);
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to delete customer');
+      toast.error(e.message || 'Failed to delete customer');
     } finally {
       setDeletingCustomer(null);
     }
@@ -423,7 +453,7 @@ export default function AdminPage() {
       setEditingReservation(null);
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to update reservation');
+      toast.error(e.message || 'Failed to update reservation');
     } finally {
       setUpdatingReservation(false);
     }
@@ -443,7 +473,7 @@ export default function AdminPage() {
       setShowDeleteReservationConfirm(null);
     } catch (e: any) {
       console.error(e);
-      alert(e.message || 'Failed to delete reservation');
+      toast.error(e.message || 'Failed to delete reservation');
     } finally {
       setDeletingReservation(null);
     }
@@ -546,9 +576,11 @@ export default function AdminPage() {
                       <div className="text-right">
                         <p className="font-medium">${reservation.price}</p>
                         <span className={`px-2 py-1 text-xs rounded-full ${
-                          reservation.payment_status === 'paid' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
+                          reservation.payment_status?.toLowerCase() === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : reservation.payment_status?.toLowerCase() === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
                         }`}>
                           {reservation.payment_status}
                         </span>
@@ -759,9 +791,11 @@ export default function AdminPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs rounded-full ${
-                            reservation.payment_status === 'paid' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
+                            reservation.payment_status?.toLowerCase() === 'completed'
+                              ? 'bg-green-100 text-green-800'
+                              : reservation.payment_status?.toLowerCase() === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
                           }`}>
                             {reservation.payment_status}
                           </span>
@@ -910,16 +944,66 @@ export default function AdminPage() {
   );
 
   const renderBooking = () => {
-    const handleBookingSubmit = async (bookingData: any) => {
+    const selectedService = services.find(s => s.s_id === selectedServiceId) || null;
+
+    const handleBookingSubmit = async (bookingData: BookingFormData) => {
       try {
-        // Here you would typically call your booking API
-        console.log('Booking submitted:', bookingData);
-        alert('Booking created successfully!');
-        // Refresh reservations data
+        if (!selectedService) {
+          throw new Error('Please select a service to book');
+        }
+
+        // Validate booking data
+        if (!bookingData.customerName || !bookingData.customerEmail) {
+          throw new Error('Customer name and email are required');
+        }
+        if (!bookingData.checkInDate || !bookingData.checkOutDate) {
+          throw new Error('Check-in and check-out dates are required');
+        }
+
+        // Create or get customer
+        const customer = await createCustomer({
+          c_name: bookingData.customerName,
+          c_email: bookingData.customerEmail,
+          c_phone: bookingData.customerPhone,
+          c_address: bookingData.customerAddress || ''
+        });
+
+        // Calculate total price from selected service and number of days
+        const checkIn = new Date(bookingData.checkInDate);
+        const checkOut = new Date(bookingData.checkOutDate);
+        const days = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+        const totalPrice = (selectedService.price || 0) * days;
+
+        // Create reservation
+        const reservation = await createReservation({
+          c_id: customer.c_id,
+          s_id: selectedService.s_id,
+          check_in_date: bookingData.checkInDate,
+          check_out_date: bookingData.checkOutDate,
+          price: totalPrice,
+          payment_status: 'pending',
+          service_type: selectedService.s_type,
+          guest_count: bookingData.guestCount,
+          special_requests: bookingData.specialRequests
+        });
+
+        // Create dummy payment record
+        try {
+          await createPayment({
+            payment_method: bookingData.paymentMethod,
+            amount: totalPrice,
+            reservation_id: reservation.reservation_id,
+          });
+        } catch (payErr) {
+          console.warn('Payment record creation failed in admin (dummy).', payErr);
+        }
+
+        toast.success(`Booking created successfully (ID: ${reservation.reservation_id}). Payment: ${bookingData.paymentMethod.replace('_', ' ')}`);
         await fetchAllData();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error creating booking:', error);
-        alert('Failed to create booking. Please try again.');
+        const message = error?.message || 'Failed to create booking. Please try again.';
+        toast.error(message);
       }
     };
 
@@ -935,10 +1019,25 @@ export default function AdminPage() {
           <CardDescription>Create a new reservation</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <Label htmlFor="admin-booking-service">Select Service</Label>
+            <select
+              id="admin-booking-service"
+              className="mt-2 w-full border rounded px-3 py-2"
+              value={selectedServiceId}
+              onChange={(e) => setSelectedServiceId(Number(e.target.value))}
+            >
+              {services.map((svc) => (
+                <option key={svc.s_id} value={svc.s_id}>
+                  {svc.s_name} — {svc.location} — ৳{svc.price}
+                </option>
+              ))}
+            </select>
+          </div>
           <BookingForm 
-            resortId={0}
-            resortName="Admin Booking"
-            resortPrice={0}
+            resortId={selectedService?.s_id ?? 0}
+            resortName={selectedService?.s_name ?? 'Admin Booking'}
+            resortPrice={selectedService?.price ?? 0}
             onClose={handleBookingClose}
             onSubmit={handleBookingSubmit}
           />

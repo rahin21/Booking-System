@@ -30,7 +30,7 @@ export interface Customer {
   updated_at?: string;
 }
 
-export interface Reservation {
+export interface  Reservation {
   reservation_id: number;
   check_in_date: string;
   check_out_date: string;
@@ -39,12 +39,22 @@ export interface Reservation {
   c_id: number;
   service_type: string;
   price: number;
+  guest_count?: number;
+  special_requests?: string;
+  date?: string;
   admin_id?: number;
   // Joined data
   service?: Service;
   customer?: Customer;
 }
 
+export interface Payment {
+  payment_id: number;
+  payment_method: 'cash_on_delivery' | 'bkash' | 'bank';
+  amount: number;
+  payment_date: string;
+  reservation_id: number;
+}
 export interface Admin {
   a_id: number;
   a_name: string;
@@ -65,6 +75,23 @@ export async function getServices() {
 
   if (error) {
     console.error('Error fetching services:', error);
+    return [];
+  }
+
+  return data as Service[];
+}
+
+export async function getServicesByAdmin(adminId: number) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('service')
+    .select('*')
+    .eq('admin_id', adminId)
+    .order('s_id', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching services for admin:', error);
     return [];
   }
 
@@ -243,6 +270,39 @@ export async function createReservation(reservationData: Omit<Reservation, 'rese
     return data as Reservation;
   } catch (error) {
     console.error('Error in createReservation function:', error);
+    throw error;
+  }
+}
+
+// Payment functions
+export async function createPayment(paymentData: Omit<Payment, 'payment_id' | 'payment_date'> & { payment_date?: string }) {
+  const supabase = createClient();
+
+  try {
+    const today = new Date();
+    const paymentDate = (paymentData.payment_date ?? today.toISOString().slice(0, 10));
+
+    const payload = {
+      payment_method: paymentData.payment_method,
+      amount: paymentData.amount,
+      payment_date: paymentDate,
+      reservation_id: paymentData.reservation_id,
+    };
+
+    const { data, error } = await supabase
+      .from('payment')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating payment:', error);
+      throw error;
+    }
+
+    return data as Payment;
+  } catch (error) {
+    console.error('Error in createPayment function:', error);
     throw error;
   }
 }

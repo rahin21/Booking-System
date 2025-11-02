@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PaymentModal, { PaymentDetails, PaymentMethod } from '@/components/PaymentModal';
 import { Calendar, User, Mail, Phone, MapPin, CreditCard, Loader2 } from 'lucide-react';
 
 interface BookingFormProps {
@@ -23,6 +24,12 @@ export interface BookingFormData {
   checkInDate: string;
   checkOutDate: string;
   specialRequests: string;
+  guestCount: number;
+  paymentMethod: 'cash_on_delivery' | 'bkash' | 'bank';
+  bkashNumber?: string;
+  bkashTrxId?: string;
+  bankName?: string;
+  bankRef?: string;
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({
@@ -40,12 +47,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
     customerAddress: '',
     checkInDate: '',
     checkOutDate: '',
-    specialRequests: ''
+    specialRequests: '',
+    guestCount: 1,
+    paymentMethod: 'cash_on_delivery',
   });
 
   const [errors, setErrors] = useState<Partial<BookingFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<BookingFormData> = {};
@@ -70,6 +80,29 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (formData.checkInDate && formData.checkOutDate && 
         new Date(formData.checkInDate) >= new Date(formData.checkOutDate)) {
       newErrors.checkOutDate = 'Check-out date must be after check-in date';
+    }
+
+    if (!formData.guestCount || formData.guestCount < 1) {
+      newErrors.guestCount = 1;
+    }
+
+    // Payment validation
+    if (!formData.paymentMethod) {
+      newErrors.paymentMethod = 'Payment method is required' as any;
+    } else if (formData.paymentMethod === 'bkash') {
+      if (!formData.bkashNumber || !/^\d{11}$/.test(formData.bkashNumber)) {
+        newErrors.bkashNumber = 'Valid bKash number (11 digits) required';
+      }
+      if (!formData.bkashTrxId || formData.bkashTrxId.trim().length < 6) {
+        newErrors.bkashTrxId = 'bKash transaction ID is required';
+      }
+    } else if (formData.paymentMethod === 'bank') {
+      if (!formData.bankName || formData.bankName.trim().length < 2) {
+        newErrors.bankName = 'Bank name is required';
+      }
+      if (!formData.bankRef || formData.bankRef.trim().length < 4) {
+        newErrors.bankRef = 'Reference number is required';
+      }
     }
 
     setErrors(newErrors);
@@ -230,6 +263,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 </div>
               </div>
               
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="guestCount">Guests *</Label>
+                  <Input
+                    id="guestCount"
+                    type="number"
+                    min={1}
+                    value={formData.guestCount}
+                    onChange={(e) => handleInputChange('guestCount', parseInt(e.target.value, 10) || 1)}
+                    className={errors.guestCount ? 'border-red-500' : ''}
+                  />
+                  {errors.guestCount && (
+                    <p className="text-sm text-red-500">{errors.guestCount}</p>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="specialRequests">Special Requests</Label>
                 <Input
@@ -239,6 +289,58 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   placeholder="Any special requests or requirements?"
                 />
               </div>
+          </div>
+
+            {/* Payment Details (Modal) */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment
+              </h3>
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="outline" onClick={() => setShowPaymentModal(true)}>
+                  Enter Payment Details
+                </Button>
+                {formData.paymentMethod && (
+                  <span className="text-sm text-gray-700">
+                    Selected: <span className="font-medium">{formData.paymentMethod === 'cash_on_delivery' ? 'Cash on Delivery' : formData.paymentMethod === 'bkash' ? 'bKash' : 'Bank Transfer'}</span>
+                  </span>
+                )}
+              </div>
+              {errors.paymentMethod && (
+                <p className="text-sm text-red-500">{errors.paymentMethod as any}</p>
+              )}
+
+              <PaymentModal
+                open={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                initialMethod={formData.paymentMethod as PaymentMethod}
+                initialDetails={{
+                  bkashNumber: formData.bkashNumber,
+                  bkashTrxId: formData.bkashTrxId,
+                  bankName: formData.bankName,
+                  bankRef: formData.bankRef,
+                }}
+                onConfirm={(details: PaymentDetails) => {
+                  handleInputChange('paymentMethod', details.paymentMethod);
+                  if (details.paymentMethod === 'bkash') {
+                    handleInputChange('bkashNumber', details.bkashNumber || '');
+                    handleInputChange('bkashTrxId', details.bkashTrxId || '');
+                  } else {
+                    // clear bKash fields
+                    handleInputChange('bkashNumber', '');
+                    handleInputChange('bkashTrxId', '');
+                  }
+                  if (details.paymentMethod === 'bank') {
+                    handleInputChange('bankName', details.bankName || '');
+                    handleInputChange('bankRef', details.bankRef || '');
+                  } else {
+                    // clear bank fields
+                    handleInputChange('bankName', '');
+                    handleInputChange('bankRef', '');
+                  }
+                }}
+              />
             </div>
 
             {/* Price Summary */}
@@ -261,6 +363,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   </span>
                 </div>
               )}
+
+              <div className="flex justify-between text-sm">
+                <span>Guests:</span>
+                <span>{formData.guestCount}</span>
+              </div>
               
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-bold">

@@ -36,12 +36,30 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protect admin routes
-  if (request.nextUrl.pathname.startsWith('/admin') && !user) {
-    // Redirect to home page with a message
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/';
-    redirectUrl.searchParams.set('message', 'Please sign in to access admin dashboard');
-    return NextResponse.redirect(redirectUrl);
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    // If not signed in, redirect to sign-in with owner mode
+    if (!user) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/auth/signin';
+      redirectUrl.searchParams.set('owner', '1');
+      redirectUrl.searchParams.set('message', 'Please sign in as a business owner');
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Verify user is a business owner (admin)
+    const { data: adminRecord, error: adminErr } = await supabase
+      .from('admin')
+      .select('*')
+      .eq('a_email', user.email)
+      .maybeSingle();
+
+    if (adminErr || !adminRecord) {
+      // Not an admin: redirect to home with message
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/';
+      redirectUrl.searchParams.set('message', 'Access restricted to business owners');
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're

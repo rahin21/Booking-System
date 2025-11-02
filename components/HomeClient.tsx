@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SearchAndFilter } from '@/components/SearchAndFilter';
 import ResortCard from '@/components/ResortCard';
 import BookingForm, { BookingFormData } from '@/components/BookingForm';
-import { createCustomer, createReservation } from '@/lib/database';
+import { createCustomer, createReservation, createPayment } from '@/lib/database';
 import { 
   Calendar, 
   Star, 
@@ -167,21 +168,35 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
           check_out_date: bookingData.checkOutDate,
           price: totalPrice,
           payment_status: 'pending',
-          service_type: selectedResort.type
+          service_type: selectedResort.type,
+          guest_count: bookingData.guestCount,
+          special_requests: bookingData.specialRequests
         };
       
       console.log('🏨 Creating reservation with data:', reservationData);
       const reservation = await createReservation(reservationData);
-      
+
       if (!reservation) {
         console.error('❌ Failed to create reservation - no reservation returned');
         throw new Error('Failed to create reservation. Please try again.');
       }
-      
+
       console.log('✅ Reservation created successfully:', reservation);
-      
-      // Success - show success message and close form
-      alert(`🎉 Booking confirmed! Your reservation ID is ${reservation.reservation_id}. We will contact you soon at ${bookingData.customerEmail}.`);
+
+      // Create a dummy payment record based on selected method
+      try {
+        await createPayment({
+          payment_method: bookingData.paymentMethod,
+          amount: totalPrice,
+          reservation_id: reservation.reservation_id,
+        });
+        console.log('💳 Payment record created for method:', bookingData.paymentMethod);
+      } catch (payErr) {
+        console.warn('Payment creation failed (dummy gateway). Continuing with pending status.', payErr);
+      }
+
+      // Success - show success toast and close form
+      toast.success(`Booking confirmed! Reservation ID: ${reservation.reservation_id}. Payment: ${bookingData.paymentMethod.replace('_', ' ')}`);
       setShowBookingForm(false);
       setSelectedResort(null);
       
@@ -205,6 +220,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
       }
       
       console.error('🔍 Final error message:', errorMessage);
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     }
   };
