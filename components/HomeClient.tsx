@@ -262,7 +262,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
               Find Your Perfect Stay
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Discover amazing resorts, hotels, and unique accommodations worldwide
+              Discover amazing resorts, hotels, and unique accommodations in Bangladesh.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" onClick={handleExploreNow}>
@@ -397,7 +397,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
                 <div>
                   <h3 className="text-xl font-semibold mb-3 text-blue-600">Welcome to Your Ultimate Booking Experience</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    Our platform connects travelers with exceptional accommodations worldwide. Whether you're seeking a luxury resort, 
+                    Our platform connects travelers with exceptional accommodations in Bangladesh. Whether you're seeking a luxury resort, 
                     a cozy mountain retreat, or a beachfront paradise, we make finding and booking your perfect stay effortless.
                   </p>
                 </div>
