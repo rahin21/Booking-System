@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SearchAndFilter } from '@/components/SearchAndFilter';
 import ResortCard from '@/components/ResortCard';
+import AnimateIn from '@/components/AnimateIn';
 import BookingForm, { BookingFormData } from '@/components/BookingForm';
 import { createCustomer, createReservation, createPayment } from '@/lib/database';
 import { 
@@ -258,6 +259,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4 py-16">
           <div className="text-center">
+            <AnimateIn>
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Find Your Perfect Stay
             </h1>
@@ -272,6 +274,7 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
                 Learn More
               </Button>
             </div>
+            </AnimateIn>
           </div>
         </div>
       </div>
@@ -319,12 +322,13 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResorts.map((resort) => (
-              <ResortCard
-                key={resort.id}
-                {...resort}
-                onBookNow={handleBookNow}
-              />
+            {filteredResorts.map((resort, idx) => (
+              <AnimateIn key={resort.id} delay={idx * 0.05}>
+                <ResortCard
+                  {...resort}
+                  onBookNow={handleBookNow}
+                />
+              </AnimateIn>
             ))}
           </div>
         )}
@@ -336,15 +340,17 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
           Popular Destinations
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {['Mountain View', 'Beach Front', 'City Center', 'Forest Retreat', 'Lakeside', 'Desert Oasis'].map((location) => (
-            <Card key={location} className="cursor-pointer hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-4 text-center">
-                <div className="mb-3 flex justify-center">
-                  {getLocationIcon(location)}
-                </div>
-                <h3 className="font-semibold text-sm text-gray-900">{location}</h3>
-              </CardContent>
-            </Card>
+          {['Mountain View', 'Beach Front', 'City Center', 'Forest Retreat', 'Lakeside', 'Desert Oasis'].map((location, idx) => (
+            <AnimateIn key={location} delay={idx * 0.05}>
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-300">
+                <CardContent className="p-4 text-center">
+                  <div className="mb-3 flex justify-center">
+                    {getLocationIcon(location)}
+                  </div>
+                  <h3 className="font-semibold text-sm text-gray-900">{location}</h3>
+                </CardContent>
+              </Card>
+            </AnimateIn>
           ))}
         </div>
       </div>
@@ -356,27 +362,27 @@ export function HomeClient({ initialResorts, filterOptions }: HomeClientProps) {
             Why Choose Our Platform?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
+            <AnimateIn className="text-center" delay={0}>
               <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Easy Booking</h3>
               <p className="text-gray-600">Simple and secure booking process with instant confirmation</p>
-            </div>
-            <div className="text-center">
+            </AnimateIn>
+            <AnimateIn className="text-center" delay={0.05}>
               <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="h-8 w-8 text-green-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Quality Assured</h3>
               <p className="text-gray-600">All accommodations are verified and quality-checked</p>
-            </div>
-            <div className="text-center">
+            </AnimateIn>
+            <AnimateIn className="text-center" delay={0.1}>
               <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-purple-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">24/7 Support</h3>
               <p className="text-gray-600">Round-the-clock customer support for all your needs</p>
-            </div>
+            </AnimateIn>
           </div>
         </div>
       </div>

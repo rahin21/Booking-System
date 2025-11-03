@@ -3,11 +3,13 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Home, Search } from "lucide-react";
 import BackButton from "@/components/BackButton";
+import AnimateIn from "@/components/AnimateIn";
 
 export default function NotFound() {
   return (
     <div className="min-h-[70vh] bg-gradient-to-b from-gray-50 to-white">
       <section className="container mx-auto px-4 py-24">
+        <AnimateIn>
         <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm">
           <div className="absolute inset-0 opacity-40 pointer-events-none">
             <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-tr from-blue-200 to-purple-200 blur-3xl" />
@@ -73,6 +75,7 @@ export default function NotFound() {
             </div>
           </div>
         </div>
+        </AnimateIn>
 
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>Error 404 — Page Not Found</p>

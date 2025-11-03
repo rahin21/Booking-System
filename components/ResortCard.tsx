@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import LazyImage from '@/components/LazyImage';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Star, Users, Wifi, Car, Coffee, ChevronLeft, ChevronRight, X, ImageIcon } from 'lucide-react';
@@ -79,16 +81,16 @@ const ResortCard: React.FC<ResortCardProps> = ({
 
   return (
     <>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
       <Card className="w-full max-w-sm hover:shadow-lg transition-shadow duration-300">
         {/* Image Gallery Section */}
         <div className="w-full h-40 bg-gray-100 overflow-hidden relative">
           {hasImages ? (
             <>
-              <img
+              <LazyImage
                 src={images[currentImageIndex]}
                 alt={`${name} image ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover cursor-pointer"
-                loading="lazy"
+                className="w-full h-full cursor-pointer"
                 onClick={() => openModal(currentImageIndex)}
               />
               
@@ -216,6 +218,7 @@ const ResortCard: React.FC<ResortCardProps> = ({
         </div>
       </CardFooter>
     </Card>
+    </motion.div>
 
     {/* Full-Screen Image Modal */}
     {showModal && hasImages && (
@@ -230,10 +233,10 @@ const ResortCard: React.FC<ResortCardProps> = ({
           </button>
 
           {/* Modal Image */}
-          <img
+          <LazyImage
             src={images[modalImageIndex]}
             alt={`${name} image ${modalImageIndex + 1}`}
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full"
           />
 
           {/* Modal Navigation */}

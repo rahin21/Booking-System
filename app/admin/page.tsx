@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Edit, Trash2, Users, Calendar, DollarSign, MapPin, Settings, Loader2 } from 'lucide-react';
 import BookingForm, { BookingFormData } from '@/components/BookingForm';
 import { toast } from 'sonner';
+import LazyImage from '@/components/LazyImage';
+import AnimateIn from '@/components/AnimateIn';
   import { 
     getServices, 
     getServicesByAdmin,
@@ -659,12 +661,12 @@ export default function AdminPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <Card key={service.s_id}>
+            {services.map((service, idx) => (
+              <AnimateIn key={service.s_id} delay={idx * 0.05}>
+              <Card>
                 {service.images && service.images.length > 0 && (
                   <div className="w-full h-40 overflow-hidden rounded-t">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={service.images[0]} alt={service.s_name} className="w-full h-full object-cover" />
+                    <LazyImage src={service.images[0]} alt={service.s_name} className="w-full h-full object-cover" />
                   </div>
                 )}
                 <CardHeader>
@@ -717,6 +719,7 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+              </AnimateIn>
             ))}
           </div>
         )}
@@ -1167,8 +1170,9 @@ export default function AdminPage() {
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {newService.images.map((url, idx) => (
                       <div key={idx} className="relative group border rounded overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={`Image ${idx + 1}`} className="w-full h-20 object-cover" />
+                        <div className="w-full h-20">
+                          <LazyImage src={url} alt={`Image ${idx + 1}`} className="w-full h-full" />
+                        </div>
                         <button type="button" className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100" onClick={() => removeImageAtIndex(idx)}>Remove</button>
                       </div>
                     ))}
@@ -1304,8 +1308,9 @@ export default function AdminPage() {
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {editingService.images.map((url, idx) => (
                       <div key={idx} className="relative group border rounded overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={`Image ${idx + 1}`} className="w-full h-20 object-cover" />
+                        <div className="w-full h-20">
+                          <LazyImage src={url} alt={`Image ${idx + 1}`} className="w-full h-full" />
+                        </div>
                         <button 
                           type="button" 
                           className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100" 

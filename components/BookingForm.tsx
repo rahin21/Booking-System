@@ -1,4 +1,6 @@
+"use client";
 import React, { useState } from 'react';
+import AnimateIn from '@/components/AnimateIn';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -146,6 +148,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <AnimateIn y={16}>
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -413,6 +416,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
           </form>
         </CardContent>
       </Card>
+      </AnimateIn>
     </div>
   );
 };
