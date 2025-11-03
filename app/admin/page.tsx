@@ -132,6 +132,11 @@ export default function AdminPage() {
 
   const handleAddService = async () => {
     try {
+      // Prevent submitting while image uploads are in progress
+      if (uploadingImages) {
+        toast.warning('Please wait until images finish uploading');
+        return;
+      }
       setAddingService(true);
       if (!newService.s_name || !newService.s_type || !newService.location || !newService.price) {
         toast.warning('Please fill in all required fields');
@@ -210,6 +215,11 @@ export default function AdminPage() {
     if (!editingService) return;
     
     try {
+      // Prevent updating while image uploads are in progress
+      if (uploadingImages) {
+        toast.warning('Please wait until images finish uploading');
+        return;
+      }
       setUpdatingService(true);
       const updated = await updateService(editingService.s_id, {
         s_name: editingService.s_name,
@@ -667,7 +677,7 @@ export default function AdminPage() {
                     <span>{service.location}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-green-600"><b className='text-xl'>৳</b>{service.price}</span>
+                    <span className="text-2xl font-bold text-green-600"><b className='text-xl'>৳</b>{service.price.toLocaleString('en-IN')}</span>
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       service.status === 'available' 
                         ? 'bg-green-100 text-green-800' 
@@ -1169,8 +1179,14 @@ export default function AdminPage() {
                 <Button variant="outline" onClick={() => setShowAddService(false)} className="flex-1">
                   Cancel
                 </Button>
-                <Button className="flex-1" onClick={handleAddService} disabled={addingService}>
-                  {addingService ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>) : 'Add Service'}
+                <Button className="flex-1" onClick={handleAddService} disabled={addingService || uploadingImages}>
+                  {addingService ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                  ) : uploadingImages ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading images...</>
+                  ) : (
+                    'Add Service'
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -1316,7 +1332,7 @@ export default function AdminPage() {
                 <Button 
                   className="flex-1" 
                   onClick={handleUpdateService} 
-                  disabled={updatingService}
+                  disabled={updatingService || uploadingImages}
                 >
                   {updatingService ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</>

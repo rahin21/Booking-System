@@ -169,14 +169,14 @@ const ResortCard: React.FC<ResortCardProps> = ({
       
       <CardContent className="pb-3">
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
+          {/* <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Check-in:</span>
             <span className="font-medium">{checkIn}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
+          </div> */}
+          {/* <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Check-out:</span>
             <span className="font-medium">{checkOut}</span>
-          </div>
+          </div> */}
           
           {amenities.length > 0 && (
             <div className="pt-2">
@@ -197,7 +197,7 @@ const ResortCard: React.FC<ResortCardProps> = ({
       <CardFooter className="pt-3 border-t">
         <div className="w-full space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold text-green-600"><b className='text-xl'>৳</b>{price}</span>
+            <span className="text-2xl font-bold text-green-600"><b className='text-xl'>৳</b>{price.toLocaleString('en-IN')}</span>
             <span className={`px-2 py-1 text-xs rounded-full ${
               isAvailable 
                 ? 'bg-green-100 text-green-800' 
