@@ -12,13 +12,17 @@ export async function GET(request: NextRequest) {
     
     if (!error) {
       const forwardedHost = request.headers.get('x-forwarded-host'); // original origin before load balancer
+      const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
       const isLocalEnv = process.env.NODE_ENV === 'development';
+      const siteUrlEnv = process.env.NEXT_PUBLIC_SITE_URL;
       
       if (isLocalEnv) {
         // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
         return NextResponse.redirect(`${origin}${next}`);
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+        return NextResponse.redirect(`${forwardedProto}://${forwardedHost}${next}`);
+      } else if (siteUrlEnv) {
+        return NextResponse.redirect(`${siteUrlEnv}${next}`);
       } else {
         return NextResponse.redirect(`${origin}${next}`);
       }

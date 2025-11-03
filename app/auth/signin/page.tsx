@@ -22,7 +22,8 @@ export default function SignInPage() {
   const [ownerMode, setOwnerMode] = useState(false);
 
   useEffect(() => {
-    setRedirectUrl(`${window.location.origin}/auth/callback`);
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    setRedirectUrl(`${baseUrl}/auth/callback`);
     try {
       const params = new URLSearchParams(window.location.search);
       setOwnerMode(params.get('owner') === '1');

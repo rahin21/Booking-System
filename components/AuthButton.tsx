@@ -36,10 +36,11 @@ export default function AuthButton() {
 
   const handleSignInWithGoogle = async () => {
     setLoading(true);
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: `${baseUrl}/auth/callback`
       }
     });
     
