@@ -27,10 +27,6 @@ export default function LazyImage({ src, alt, className = '', onClick }: LazyIma
 
   return (
     <div className={`relative overflow-hidden ${className}`} onClick={onClick}>
-      {!loaded && !errored && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-      )}
-
       {errored && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <ImageIcon className="h-6 w-6 text-gray-400" />
@@ -41,8 +37,7 @@ export default function LazyImage({ src, alt, className = '', onClick }: LazyIma
       <img
         src={ErroredPlaceholder(errored, src)}
         alt={alt}
-        loading="lazy"
-        className={`w-full h-full object-cover transition-opacity duration-500 ${loaded && !errored ? 'opacity-100' : 'opacity-0'}`}
+        className="w-full h-full object-cover"
         onLoad={() => setLoaded(true)}
         onError={() => setErrored(true)}
       />
