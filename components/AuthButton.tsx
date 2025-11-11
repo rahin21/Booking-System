@@ -60,6 +60,8 @@ export default function AuthButton() {
     if (error) {
       console.error('Error signing out:', error.message);
     }
+    // Redirect to homepage after sign out
+    router.push('/');
     setLoading(false);
   };
 

@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { Home, Settings, Calendar, Users } from "lucide-react";
 import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
+import AdminButton from "@/components/AdminButton";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -49,10 +50,8 @@ export default function RootLayout({
                     <Home className="h-4 w-4" />
                     <span>Home</span>
                   </Link>
-                  <Link href="/admin" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                    <Settings className="h-4 w-4" />
-                    <span>Admin</span>
-                  </Link>
+                  {/* Admin link only for authenticated admins */}
+                  <AdminButton />
                 </div>
               </div>
               
@@ -91,7 +90,7 @@ export default function RootLayout({
                 <h4 className="text-md font-semibold mb-4">Quick Links</h4>
                 <ul className="space-y-2 text-gray-400">
                   <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
-                  <li><Link href="/admin" className="hover:text-white transition-colors">Admin</Link></li>
+                  <li className="hidden md:block"><AdminButton /></li>
                   <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
                   <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
                 </ul>

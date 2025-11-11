@@ -54,10 +54,9 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     if (adminErr || !adminRecord) {
-      // Not an admin: redirect to home with message
+      // Not an admin: show unauthorized page
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/';
-      redirectUrl.searchParams.set('message', 'Access restricted to business owners');
+      redirectUrl.pathname = '/unauthorized';
       return NextResponse.redirect(redirectUrl);
     }
   }
