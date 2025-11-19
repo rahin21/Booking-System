@@ -1013,6 +1013,8 @@ export default function AdminPage() {
 
         toast.success(`Booking created successfully (ID: ${reservation.reservation_id}). Payment: ${bookingData.paymentMethod.replace('_', ' ')}`);
         await fetchAllData();
+        // After successful booking, return to Reservations tab
+        setActiveTab('reservations');
       } catch (error: any) {
         console.error('Error creating booking:', error);
         const message = error?.message || 'Failed to create booking. Please try again.';
@@ -1021,8 +1023,8 @@ export default function AdminPage() {
     };
 
     const handleBookingClose = () => {
-      // In admin panel context, we don't need to close anything
-      // This could be used to reset form or navigate away
+      // Navigate back to Reservations when closing booking form
+      setActiveTab('reservations');
     };
 
     return (
